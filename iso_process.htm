@@ -1,0 +1,148 @@
+<script type="text/javascript">
+	var canvas, ctx, W, H, piston, atomsStack=[], onStop=false;
+
+	window.onload = () => {
+		W = 400; H = 700;
+		canvas = document.getElementById("canvas");
+		canvas.width = W;
+		canvas.height = H;
+
+		ctx = canvas.getContext("2d");
+
+		piston = new Piston();
+		
+		setInterval(update, 50);
+		
+	}
+
+	function update() {
+		if (onStop) return false;
+		ctx.clearRect(0,0,W,H);
+		
+		if (piston.state == "top") {
+			piston.speed = 3;
+		} 
+		else if (piston.state == "bottom") {
+			piston.speed = -3;
+		}
+
+		piston.p += piston.speed;
+
+		piston.draw();
+		atomsStack.map(function(atom){
+			atom.draw();
+		})
+	}
+
+	function Piston() {
+		this.x = 0;
+		this.y = 0;
+		this.speed = 0;
+
+		this.p = 0;
+		this.state = "top";
+
+		this.draw = () => {
+			let lineWidth = W/200,
+				onTop = false;
+				onBot = false;
+
+			if (this.p >= 0.5*H-lineWidth) {
+				this.p = 0.5*H-lineWidth;
+				onBot = true;
+			} else if (this.p <= 0) {
+				this.p = 0;
+				onTop = true;
+			}
+
+			ctx.beginPath();
+				ctx.moveTo(0, 0.4*H);
+				ctx.lineTo(0, H);
+				ctx.lineTo(W, H);
+				ctx.lineTo(W, 0.4*H);
+				ctx.lineWidth = lineWidth;
+				ctx.strokeStyle = "black";
+				ctx.stroke();
+			ctx.closePath();
+
+			ctx.beginPath();
+				ctx.moveTo(W/2 - W/8, this.p);
+				ctx.lineTo(W/2 - W/8, this.p + 0.4*H);
+				ctx.moveTo(W/2 + W/8, this.p + 0.4*H);
+				ctx.lineTo(W/2 + W/8, this.p);
+				ctx.lineWidth = lineWidth;
+				ctx.strokeStyle = "black";
+				ctx.stroke();
+			ctx.closePath();
+
+			ctx.beginPath();
+				ctx.fillStyle = "#9E9E9E";
+				ctx.fillRect(0+lineWidth, 
+							 this.p + 0.4*H,
+							 W-2*lineWidth,
+							 0.1*H)				
+			ctx.closePath();
+
+			if (onTop || onBot) {
+				this.state = onTop ? "top" : "bottom";
+			} else {
+				this.state = "center";
+			}
+		}
+	}
+
+	function Atom() {
+		this.r = 15;
+		this.x = 0;
+		this.y = 0;
+		this.areaMax = 25;
+		this.areaMin = 16;
+
+		this.draw = () => {
+			ctx.beginPath();
+				ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI, true);
+				ctx.fillStyle = "#5BAAFF";
+				ctx.fill();
+			ctx.closePath();
+		}
+	}
+	function addAtom() {
+		let atom = new Atom(),
+			X_MIN = W/200,
+			X_MAX = W - W/200,
+			Y_MIN = piston.p + 0.5*H + W/200,
+			Y_MAX = H - W/200;
+
+		ctx.beginPath();
+			ctx.moveTo(X_MIN, Y_MIN);
+			ctx.lineTo(X_MIN, Y_MAX);
+			ctx.lineTo(X_MAX, Y_MAX);
+			ctx.lineTo(X_MAX, Y_MIN);
+			ctx.lineTo(X_MIN, Y_MIN);
+			ctx.strokeStyle = "red";
+			ctx.lineWidth = 1;
+			ctx.stroke();
+		ctx.closePath();
+		//atomsStack.push(atom);
+	}
+</script>
+<style type="text/css">
+	canvas {
+		float: left;
+	}
+	#buttons {
+		width: 100px;
+		float: left;
+	}
+	#buttons button {
+		width: 100%;
+	}
+</style>
+<body>
+	<canvas id="canvas"></canvas>
+	<div id="buttons">
+		<button onclick="onStop=false">Start</button>
+		<button onclick="onStop=true">Stop</button>
+		<button onclick="addAtom()">addAtom</button>	
+	</div>
+</body>
