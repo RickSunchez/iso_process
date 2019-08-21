@@ -1,5 +1,5 @@
 <script type="text/javascript">
-	var canvas, ctx, W, H, piston, atomsStack=[], onStop=false;
+	var canvas, ctx, W, H, piston, air, onStop=false;
 
 	window.onload = () => {
 		W = 400; H = 700;
@@ -10,28 +10,46 @@
 		ctx = canvas.getContext("2d");
 
 		piston = new Piston();
+		air = new Air();
 		
 		setInterval(update, 50);
 		
 	}
 
 	function update() {
-		if (onStop) return false;
 		ctx.clearRect(0,0,W,H);
 		
-		if (piston.state == "top") {
+		if (piston.state == "top" || piston.state == "bottom" || piston.state == "stop") {
+			piston.speed = 0;
+		}
+		if (piston.state == "down" && (air.state == "onAir" || !air.stoppedV)) {
 			piston.speed = 3;
-		} 
-		else if (piston.state == "bottom") {
+		}
+		else if (piston.state == "up" && (air.state == "onAir" || !air.stoppedV)) {
 			piston.speed = -3;
 		}
 
 		piston.p += piston.speed;
 
 		piston.draw();
-		atomsStack.map(function(atom){
-			atom.draw();
-		})
+		if (air.stoppedV) {
+			let pushMax = air.stoppedV * (1 - air.k),
+				pushCurrent = air.V - air.stoppedV * air.k,
+				pushVal = 1 - pushCurrent/pushMax;
+
+			if (pushVal > 0) {
+				air.color[0] = pushVal*255;
+				air.color[1] = 127*(1-pushVal);
+				air.color[2] = 255*(1-pushVal);
+			} else {
+				air.color[0] = 127*(1-pushVal);
+				air.color[1] = 127*(1-pushVal);
+				air.color[2] = 255*(1-pushVal);
+			}
+			
+
+			air.draw();
+		}
 	}
 
 	function Piston() {
@@ -47,8 +65,8 @@
 				onTop = false;
 				onBot = false;
 
-			if (this.p >= 0.5*H-lineWidth) {
-				this.p = 0.5*H-lineWidth;
+			if (this.p >= 0.5*H-3*lineWidth) {
+				this.p = 0.5*H-3*lineWidth;
 				onBot = true;
 			} else if (this.p <= 0) {
 				this.p = 0;
@@ -86,12 +104,48 @@
 			if (onTop || onBot) {
 				this.state = onTop ? "top" : "bottom";
 			} else {
-				this.state = "center";
+				this.state = "move";
 			}
 		}
 	}
+	function Air() {
+		this.x = W/200;
+		this.w = W - W/200 - this.x;
+		this.state = "";
 
-	function Atom() {
+		this.y = piston.p + 0.5*H + W/200;
+		this.h = H - W/200 - this.y;
+		this.V = this.w * this.h;
+
+		this.stoppedV = 0;
+		this.k = 0.4;
+		this.color = [240, 240, 255];
+
+		this.draw = () => {
+			this.y = piston.p + 0.5*H + W/200;
+			this.h = H - W/200 - this.y;
+			this.V = this.w * this.h;
+			this.state = "onAir";
+
+			if ((this.V <= this.stoppedV*this.k) && this.stoppedV) {
+				piston.state = "stop";
+				air.state = "pushed";
+			}
+
+			ctx.beginPath();
+				ctx.fillStyle = ArrToRGB(this.color);
+				ctx.fillRect(this.x, this.y, this.w, this.h);
+			ctx.closePath();
+		}
+	}
+	function ArrToRGB(arr) {
+		return "rgb("+arr[0]+","+arr[1]+","+arr[2]+")"
+	}
+
+	function Fill() {
+		air.stoppedV = air.V;
+	}
+	/*function Atom() {
 		this.r = 15;
 		this.x = 0;
 		this.y = 0;
@@ -124,7 +178,7 @@
 			ctx.stroke();
 		ctx.closePath();
 		//atomsStack.push(atom);
-	}
+	}*/
 </script>
 <style type="text/css">
 	canvas {
@@ -141,8 +195,9 @@
 <body>
 	<canvas id="canvas"></canvas>
 	<div id="buttons">
-		<button onclick="onStop=false">Start</button>
-		<button onclick="onStop=true">Stop</button>
-		<button onclick="addAtom()">addAtom</button>	
+		<button onclick="piston.state = 'up';onStop=false; air.state='onAir'">Pull</button>
+		<button onclick="piston.state = 'stop'">Stop</button>
+		<button onclick="piston.state = 'down';onStop=false">Push</button>
+		<button onclick="Fill()">Fill</button>	
 	</div>
 </body>
