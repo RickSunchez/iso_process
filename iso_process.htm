@@ -9,6 +9,10 @@
 
 		ctx = canvas.getContext("2d");
 
+		for (let node of document.getElementsByName("Const")) {
+			if (node.checked) disable_range(node);
+		}
+
 		piston = new Piston();
 		air = new Air();
 		
@@ -145,6 +149,41 @@
 	function Fill() {
 		air.stoppedV = air.V;
 	}
+
+	function iso_process(node) {
+		let value = node.value,
+			nodeVar = node.id,
+			radioNodes = document.getElementsByName("Const"),
+			processName = "";
+
+		for (let node of radioNodes) {
+			if (node.checked) processName = node.value;
+		}
+
+		switch (processName) {
+			case "isobar": //------- V/T = const
+				break;
+			case "isohor": //------- p/T = const
+				break;
+			case "isoter": //------- p*V = const
+				break;
+		}
+	}
+
+	function disable_range(node) {
+		let inputNode = node.parentNode.parentNode.parentNode.getElementsByTagName("input"),
+			rangeNode = node.parentNode.parentNode.getElementsByTagName("input")[0];
+
+		for (let node of inputNode) {
+			node.disabled = false;
+			node.style.opacity = "1";
+			if (node == rangeNode) {
+				node.disabled = true;
+				node.style.opacity = "0.5";
+			}
+		}
+	}
+
 	/*function Atom() {
 		this.r = 15;
 		this.x = 0;
@@ -191,6 +230,9 @@
 	#buttons button {
 		width: 100%;
 	}
+	table td {
+		text-align: center;
+	}
 </style>
 <body>
 	<canvas id="canvas"></canvas>
@@ -199,5 +241,41 @@
 		<button onclick="piston.state = 'stop'">Stop</button>
 		<button onclick="piston.state = 'down';onStop=false">Push</button>
 		<button onclick="Fill()">Fill</button>	
+	</div>
+	<div id="process">
+		<table>
+			<tr>
+				<th>Varialable</th>
+				<th>Value</th>
+				<th>Const</th>
+			</tr>
+			<tr>
+				<td>Pressure</td>
+				<td>
+					<input type="range" min="0" max="100" step="1" id="p" oninput="iso_process(this)">
+				</td>
+				<td>
+					<input type="radio" name="Const" checked onchange="disable_range(this)" value='isobar'>
+				</td>
+			</tr>
+			<tr>
+				<td>Volume</td>
+				<td>
+					<input type="range" min="0" max="100" step="1" id="V" oninput="iso_process(this)">
+				</td>
+				<td>
+					<input type="radio" name="Const" onchange="disable_range(this)" value='isohor'>
+				</td>
+			</tr>
+			<tr>
+				<td>Temperature</td>
+				<td>
+					<input type="range" min="0" max="100" step="1" id="T" oninput="iso_process(this)">
+				</td>
+				<td>
+					<input type="radio" name="Const" onchange="disable_range(this)" value='isoter'>
+				</td>
+			</tr>
+		</table>
 	</div>
 </body>
